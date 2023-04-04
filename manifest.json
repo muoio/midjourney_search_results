@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "Download midjourney search results",
+    "version": "1.0",
+  
+    "description": "Download midjourney search results",
+    "icons": {
+        "48": "icon.png"
+      },
+    "content_scripts": [
+      {
+        "js": ["js/content.js"],
+        "matches":["https://www.midjourney.com/app/search/*"],
+        "run_at": "document_end"
+      }
+    ],
+    "permissions":[
+      "activeTab",
+      "tabs"
+    ]
+  }
