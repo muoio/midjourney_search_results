@@ -63,8 +63,12 @@ function isNumeric(str) {
 
     let x = await fetch(url).then(result=>result.json()).catch(error=>'error'); 
     if (x!='error'){
-        for(let i=0;i<Math.min(number_download, x.length);++i)
-            console.log(x[i].image_paths[0]);
+        for(let i=0;i<Math.min(number_download, x.length);++i){
+            let img_link = x[i].image_paths[0];
+            let filename =  (x[i].event.textPrompt.join('_').replace(/[ &\/\\#,+()$~%.'":*?<>{}]/g, "_"));
+            console.log(img_link)
+            chrome.runtime.sendMessage({greeting:'download', url: img_link, keyword:keyword, filename:filename});
+        }
     }
   }
   

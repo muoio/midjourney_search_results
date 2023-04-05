@@ -14,8 +14,15 @@
         "run_at": "document_end"
       }
     ],
+    "background": {
+      "service_worker": "js/background.js"
+    },
+    "host_permissions": [
+      "<all_urls>"
+    ],
     "permissions":[
       "activeTab",
-      "tabs"
+      "tabs",
+      "downloads"
     ]
   }
