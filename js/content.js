@@ -44,6 +44,23 @@ function isNumeric(str) {
            !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
 }
 
+async function sendMessageAndWaitForResponse(message) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+        return false;
+      } else {
+        resolve(response);
+        return true;
+      }
+    });
+  });
+}
+function get_url_extension( url ) {
+    return url.split(/[#?]/)[0].split('.').pop().trim();
+}
+
   async function download_keyword(keyword){
     let parts = keyword.split(' ');
     let number_download;
@@ -59,17 +76,29 @@ function isNumeric(str) {
     keyword_replace = parts.join('+');
     url = 'https://www.midjourney.com/api/app/vector-search/?amount=500&dedupe=true&jobStatus=completed&jobType=upscale&orderBy=hot&prompt='+encodeURIComponent(keyword_replace)+'&refreshApi=0&searchType=vector&service=null&user_id_ranked_score=0%2C4%2C5';
     
-    console.log(url);
+    console.log('url ',url);
 
-    let x = await fetch(url).then(result=>result.json()).catch(error=>'error'); 
-    if (x!='error'){
+    return fetch(url)
+    .then(result=>result.json())
+    .then(async x => {
+        //console.log(x);
+        let all_downloads = []
         for(let i=0;i<Math.min(number_download, x.length);++i){
             let img_link = x[i].image_paths[0];
+            let extension_name = get_url_extension(img_link)
+            //let current_time = new Date().getTime();
+            let random_ext = String.fromCharCode(Math.floor(Math.random()*26)+97);
             let filename =  (x[i].event.textPrompt.join('_').replace(/[ &\/\\#,+()$~%.'":*?<>{}]/g, "_"));
-            console.log(img_link)
-            chrome.runtime.sendMessage({greeting:'download', url: img_link, keyword:keyword, filename:filename});
+            filename = filename.slice(0,Math.min(filename.length,20));
+            //console.log(img_link)
+            //chrome.runtime.sendMessage({greeting:'download', url: img_link, keyword:keyword, filename:filename});
+            all_downloads.push(sendMessageAndWaitForResponse({greeting:'download', url: img_link, keyword:keyword, filename:filename+'_'+random_ext+'.'+extension_name}));        
         }
-    }
+        console.log(all_downloads);
+        return new Promise.all(all_downloads);
+    })
+    .then(result=>console.log)
+    .catch(error=>'error'); 
   }
   
 
@@ -78,8 +107,8 @@ function isNumeric(str) {
 
 
 if (!localStorage.hasOwnProperty('top_position')) localStorage['top_position'] = "10%";
-if (!localStorage.hasOwnProperty('left_position')) localStorage['left_position'] = "90%";
-if (!localStorage.hasOwnProperty('num_images')) localStorage['num_images'] = "100";
+if (!localStorage.hasOwnProperty('left_position')) localStorage['left_position'] = "40%";
+if (!localStorage.hasOwnProperty('num_images')) localStorage['num_images'] = "5";
 
 
 let note = document.createElement("div");
@@ -108,7 +137,7 @@ input.style.setProperty('overflow-wrap', 'normal','important');
 input.style.setProperty('overflow-x', 'scroll','important');
 input.style.setProperty('scrollbar-width', 'thin','important');
 input.style.setProperty('scrollbar-color', '#FFC107','#F5F5F5');
-input.style.height = '70%';
+input.style.height = '75%';
 input.style.width = '100%';
 
 input.placeholder = "Write your keywords here";
@@ -151,17 +180,32 @@ saveButton.onclick = async function(){
     if (saveButton.textContent == 'Save'){
         saveButton.textContent = 'Stop';
         saveButton.style.setProperty('background-color', 'LightPink', 'important');
-        input.style.height = '65%';
+        input.style.height = '70%';
         myProgress.style.display = 'block';
         let keywords = input.value.split('\n');
-        for(var i = 0;i < keywords.length;i++){
-            await download_keyword(keywords[i]);
+        let i = 0;
+        let n = keywords.length;
+        myBar.style.width = '0%';
+        while(i<n){
+          //document.getElementById('myProgress').textContent = 'Downloading '+ keywords[i];
+          let current_keyword = keywords[i].trim();
+          if (current_keyword.length > 0){
+            let x = await download_keyword(keywords[i].trim());
+            console.log(x);
+          }
+          i++;
+          myBar.style.width = Math.round(i*100/n) + '%';
         }
+
+        saveButton.textContent = 'Save';
+        saveButton.style.setProperty('background-color', 'SpringGreen', 'important');
+        input.style.height = '75%';
+        myProgress.style.display = 'none';
     }
     else{
         saveButton.textContent = 'Save';
         saveButton.style.setProperty('background-color', 'SpringGreen', 'important');
-        input.style.height = '70%';
+        input.style.height = '75%';
         myProgress.style.display = 'none';
     }
 }
@@ -175,21 +219,21 @@ note.appendChild(saveDiv);
 let myProgress = document.createElement('div');
 myProgress.id = 'myProgress';
 myProgress.style.width = '100%';
-myProgress.style.height = '10%';
+myProgress.style.height = '5%';
 myProgress.style.setProperty('background-color', 'Lavender', 'important');
 myProgress.style.borderColor = 'black'
 myProgress.style.color = 'Indigo';
 myProgress.style.textAlign = 'center';
-myProgress.textContent = 'Downloadling google i styke';
 myProgress.style.display = 'none';
+//myProgress.textContent = 'Downloadling google i styke';
 
 
 let myBar = document.createElement('div');
 myBar.id = 'myBar';
-myBar.style.width = '10%';
+myBar.style.width = '0%';
 myBar.style.height = '100%';
 myBar.style.backgroundColor = 'PaleGreen';
-myBar.style.display = 'inline-flex';
+myBar.style.display = 'block';
 myBar.style.float = 'left';
 myProgress.appendChild(myBar);
 note.appendChild(myProgress);

@@ -10,7 +10,7 @@
     "content_scripts": [
       {
         "js": ["js/content.js"],
-        "matches":["https://www.midjourney.com/app/search/*","<all_urls>"],
+        "matches":["https://www.midjourney.com/app/*"],
         "run_at": "document_end"
       }
     ],
